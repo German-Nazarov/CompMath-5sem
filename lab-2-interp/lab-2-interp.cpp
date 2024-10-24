@@ -25,33 +25,26 @@ class NewtonInterpolator {
     std::array<yType, N> values;
 
     public:
-    NewtonInterpolator(const std::array<xType, N> &points, const std::array<yType, N>& values)
-    {   
-        this->points = points;
-        this->values = values;
+    NewtonInterpolator(const std::array<xType, N> &points_, const std::array<yType, N>& values_)
+        : points{ points_ }, values{ values_ }
+    {
+        for(int j = 0; j < N; j++)
+        {
+            yType old_div = values[j];
+            for(int i = j+1; i < N; i++)
+            {   
+                yType temp = values[i];
+                values[i] = (values[i] - old_div)/(points[i] - points[i-(j+1)]);
+                old_div = temp;
+            }
+        }
+        // std::cout << "divided differences (step " << N << "): " << values << std::endl; // проверка разделенных разностей
     }
     
     yType interpolate(const xType& x) const
     {
-        // Инициализация и заполнение массива для разделенных разностей, который в начале совпадает с values
-        std::array<yType, N> div_diff = values;
-
-        for(int j = 0; j < N; j++)
-        {
-            // std::cout << "divided differences (step " << j+1 << "): " << div_diff << std::endl;
-            yType old_div = div_diff[j];
-            for(int i = j+1; i < N; i++)
-            {   
-                yType temp = div_diff[i];
-                div_diff[i] = (div_diff[i] - old_div)/(points[i] - points[i-(j+1)]);
-                old_div = temp;
-            }
-        }
-        // std::cout << std::endl;
-        // std::cout << "divided differences (step " << N << "): " << div_diff << std::endl; // проверка разделенных разностей
-
         // Вычисление значения полинома Ньютона в точке x при помощи схемы Горнера
-        yType D = div_diff[0]; // инициализация
+        yType D = values[0]; // инициализация
 
         for(int k = 1; k < N; k++)
         {
@@ -62,7 +55,7 @@ class NewtonInterpolator {
                 product *= x - points[j];
             }
 
-            D += div_diff[k] * product;
+            D += values[k] * product;
         }
 
         return D;
@@ -101,10 +94,10 @@ std::array<xType, N> chebyshev_points(const xType& lead, const xType& end) // ч
 int main()
 {   
     // Выбор N
-    const unsigned int N = 5;
+    const unsigned int N = 3;
 
     // Подготовка файла
-    std::ofstream out("lab-2-interp_data-n5-u.txt");
+    std::ofstream out("lab-2-interp_data-n3-u.txt");
 
     // Равномерное расположение узлов
     for(int i = 0; i <= 5; i++)
@@ -135,11 +128,12 @@ int main()
             }
         }
 
+        std::cout << "Points U: " << points << std::endl; 
         out << end-lead << "  " << err << std::endl; 
     }
 
     // Подготовка файла
-    std::ofstream out_ch("lab-2-interp_data-n5-ch.txt");
+    std::ofstream out_ch("lab-2-interp_data-n3-ch.txt");
 
     // Чебышевское расположение узлов
     for(int i = 0; i <= 5; i++)
@@ -169,7 +163,15 @@ int main()
                 err = difference;
             }
         }
-
+        std::cout << "Points Ch: " << points << std::endl; 
         out_ch << end-lead << "  " << err << std::endl; 
     }
+
+    // Баловство
+    // for(int p = 0; p < 310; p++)
+    // {
+    //     double num = 1.0 / pow(10, p);
+
+    //     std::cout << num << std::endl;
+    // } 
 }
