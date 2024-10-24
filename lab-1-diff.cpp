@@ -4,16 +4,6 @@
 #include <Eigen/Dense>
 #include <cmath>
 
-unsigned long long int fact(int n)
-{
-   if(n > 0){
-    return (n>1)?n*fact(n-1):n;
-   }
-   else{
-    return 1;
-   }
-}
-
 template<typename RealType, unsigned int N>
 struct DerivativeCoef {
     RealType centralCoef;
@@ -46,11 +36,20 @@ DerivativeCoef<RealType, N> calcDerivativeCoef(const std::array<RealType, N>& po
     // std::cout << rightSide << std::endl; 
 
     //Заполнение матрицы коэфф-ов для лин. системы
+    //Заполнение матрицы коэфф-ов для лин. системы
+    double f = 1;
     for(int j = 0; j < N+1; j++){
+        if(j == 0)
+        {
+            f = 1;
+        }
+        else
+        {
+            f *= j;
+        }
+
         for(int i = 0; i < N; i++){
-            auto h_min = *std::min_element(points.begin(), points.end());
-            double f = fact(j);
-            syst(j, i+1) = (1/f) * pow(((points[i])/(abs(h_min))), j);
+            syst(j, i+1) = (1/f) * pow(points[i], j);
         }
     } 
 
