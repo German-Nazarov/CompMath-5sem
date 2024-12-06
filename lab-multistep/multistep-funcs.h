@@ -96,42 +96,46 @@ std::vector<typename RHS::StateAndArg> integrate(
     std::vector<typename RHS::StateAndArg> res;
 
     typename RHS::StateAndArg init = initialState;
-    double midstep = parameters.step / 4;
-    typename RHS::Argument end = init.arg + midstep*4;
+    typename RHS::Argument end = init.arg + parameters.step*4;
 
-    res.push_back(init);
-
-    for(typename RHS::Argument t = init.arg; t < endTime; t += parameters.step) {
+    std::vector<typename RHS::StateAndArg> y2 = integrateRK<RK4Table, RHS>(init, end, parameters.step, rhs);
+    res.push_back(y2[0]);
+    res.push_back(y2[1]);
+    res.push_back(y2[2]);
+    res.push_back(y2[3]);
+    y2[4] = y2[3];
+    
+    for(typename RHS::Argument t = init.arg + parameters.step*4; t < endTime; t += parameters.step) {
         double dif = 5*parameters.epsilon;
         typename RHS::StateAndArg y;
-        std::vector<typename RHS::StateAndArg> yRK = integrateRK<RK4Table, RHS>(init, end, midstep, rhs);
-        // std::cout << "CALCUL " << yRK[3].arg << " " << yRK[3].state[0] << " " << init.state[0] << std::endl;
-        // std::cout << init.arg << " " << end << " " << yRK[4].arg << " " << yRK[4].state[0] << std::endl;
         y.arg = end;
-        y.state = yRK[4].state;
+        y.state = y2[4].state;
         for(int j = 0; j < parameters.maxIter; j++) {
             if(dif > parameters.epsilon) {
                 for(int m = 0; m < rhs.dim; m++) {
-                    y.state[m] = midstep*rhs.calc(yRK[4])[m]/BDF4::alpha[4]; 
+                    y.state[m] = parameters.step*rhs.calc(y2[4])[m]/BDF4::alpha[4]; 
                     for(unsigned int s = 0; s < BDF4::size; s++) {
-                        y.state[m] += BDF4::alpha[s]*yRK[s].state[m]/BDF4::alpha[4];
-                        if(t < 0.3) {
-                            // std:: cout << "COEFS " << s << " " << BDF4::alpha[s] << " " << yRK[s].state[0] << std::endl;
-                        }
+                        y.state[m] += BDF4::alpha[s]*y2[s].state[m]/BDF4::alpha[4];
                     }
                 }
             }
             else {
                 break;
             }
-            dif = rhs.calcDif(y.state, yRK[4].state);
-            // std::cout << yRK[4].arg << " " << yRK[4].state[0] << " " << y.state[0] << std::endl;
-            yRK[4].state = y.state;
+            dif = rhs.calcDif(y.state, y2[4].state);
+            y2[4] = y;
         }
         res.push_back(y);
+
+        y2[0] = y2[1];
+        y2[1] = y2[2];
+        y2[2] = y2[3];
+        y2[3] = y2[4];
+
         init.state = y.state;
         init.arg = end;
-        end = init.arg + midstep*4;
+        y2[4].arg = end;
+        end = init.arg + parameters.step;
     }
     return res;
 }
